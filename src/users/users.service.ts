@@ -27,4 +27,23 @@ export class UsersService {
       data,
     });
   }
+
+  async findAll(currentUserId: number) {
+    return this.prisma.user.findMany({
+      where: {
+        id: {
+          not: currentUserId,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  }
+
 }
