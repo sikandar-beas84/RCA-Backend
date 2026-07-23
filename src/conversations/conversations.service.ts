@@ -84,6 +84,8 @@ export class ConversationsService {
                 id: true,
                 name: true,
                 email: true,
+                isOnline: true,
+                lastSeen: true,
               },
             },
           },

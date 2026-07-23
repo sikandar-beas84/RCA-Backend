@@ -46,4 +46,27 @@ export class UsersService {
     });
   }
 
+  async setOnline(userId: number) {
+    return this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isOnline: true,
+      },
+    });
+  }
+
+  async setOffline(userId: number) {
+    return this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isOnline: false,
+        lastSeen: new Date(),
+      },
+    });
+  }
+
 }
