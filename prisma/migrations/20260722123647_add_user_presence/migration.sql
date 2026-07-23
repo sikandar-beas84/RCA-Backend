@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `user` ADD COLUMN `avatar` VARCHAR(191) NULL,
+    ADD COLUMN `isOnline` BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN `lastSeen` DATETIME(3) NULL,
+    ADD COLUMN `socketId` VARCHAR(191) NULL;
