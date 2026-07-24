@@ -1,15 +1,14 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const config = app.get(ConfigService);
 
   app.enableCors({
-    origin: [
-      'http://localhost:3001',
-      'http://192.168.1.144:3001',
-    ],
+    origin: config.get<string>('FRONTEND_URL'),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -22,9 +21,14 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000, '0.0.0.0');
+  const port = config.get<number>('PORT') ?? 3000;
 
-  console.log('Server running at http://localhost:3000');
+  await app.listen(port, '0.0.0.0');
+
+  console.log(`🚀 Backend running on port ${port}`);
+  console.log(`Local:   http://localhost:${port}`);
+  console.log(`Network: http://192.168.1.144:${port}`);
+  
 }
 
 bootstrap();
