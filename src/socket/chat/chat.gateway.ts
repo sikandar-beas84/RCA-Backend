@@ -70,15 +70,107 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: SendMessageDto,
   ) {
-    const message = await this.messagesService.sendMessage(
+    // Save message as SENT
+    let message = await this.messagesService.sendMessage(
       dto.senderId,
       dto.conversationId,
       dto.text,
     );
 
-    this.server.emit('receive_message', message);
+    // Find the receiver
+    const conversation =
+      await this.messagesService.getConversationParticipants(
+        dto.conversationId,
+      );
+
+    const receiver = conversation.find(
+      (p) => p.userId !== dto.senderId,
+    );
+
+    // If receiver is online -> mark DELIVERED
+    if (
+      receiver &&
+      this.onlineUsers.has(receiver.userId)
+    ) {
+      message =
+        await this.messagesService.markAsDelivered(
+          message.id,
+        );
+
+      console.log(
+        'DELIVERED:',
+        message.id,
+      );
+    }
+
+    // Send message to everyone
+    this.server.emit(
+      'receive_message',
+      message,
+    );
+
+    // Notify sender about new status
+    this.server.emit(
+      'message_status_updated',
+      message,
+    );
 
     return message;
+  }
+
+
+  
+    @SubscribeMessage('message_seen')
+    async messageSeen(
+      @MessageBody()
+      data: {
+        messageId: number;
+      },
+    ) {
+      const message =
+        await this.messagesService.markAsSeen(
+          data.messageId,
+        );
+
+      this.server.emit(
+        'message_status_updated',
+        message,
+      );
+    }
+
+  // ==========================
+  // Typing
+  // ==========================
+
+  @SubscribeMessage('typing')
+  typing(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      conversationId: number;
+      userId: number;
+      userName: string;
+    },
+  ) {
+    console.log('TYPING:', data);
+    client.broadcast.emit('typing', data);
+  }
+
+  // ==========================
+  // Stop Typing
+  // ==========================
+
+  @SubscribeMessage('stop_typing')
+  stopTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      conversationId: number;
+      userId: number;
+    },
+  ) {
+    console.log('STOP_TYPING:', data);
+    client.broadcast.emit('stop_typing', data);
   }
 
   @SubscribeMessage("user_connected")
@@ -96,6 +188,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     console.log("ONLINE:", data.userId);
+
+    // Mark all pending messages as DELIVERED
+    const updatedMessages =
+      await this.messagesService.markPendingMessagesAsDelivered(
+        data.userId,
+      );
+
+    // Notify sender(s)
+    updatedMessages.forEach((message) => {
+      this.server.emit("message_status_updated", message);
+
+      console.log(
+        "AUTO DELIVERED:",
+        message.id,
+      );
+    });
   }
 
 }

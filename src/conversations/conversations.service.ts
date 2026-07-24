@@ -67,30 +67,45 @@ export class ConversationsService {
   }
 
   async myConversations(userId: number) {
-    return this.prisma.conversation.findMany({
-      where: {
-        participants: {
-          some: {
-            userId,
-          },
+  return this.prisma.conversation.findMany({
+    where: {
+      participants: {
+        some: {
+          userId,
         },
       },
+    },
 
-      include: {
-        participants: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                isOnline: true,
-                lastSeen: true,
-              },
+    include: {
+      participants: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              isOnline: true,
+              lastSeen: true,
             },
           },
         },
       },
-    });
-  }
+
+      messages: {
+        take: 1,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
 }

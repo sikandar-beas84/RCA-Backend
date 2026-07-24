@@ -53,6 +53,12 @@ model ConversationParticipant {
   @@unique([conversationId, userId])
 }
 
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
+
 model Message {
   id             Int @id @default(autoincrement())
 
@@ -61,7 +67,7 @@ model Message {
 
   text           String
 
-  isSeen         Boolean @default(false)
+  status         MessageStatus @default(SENT)
 
   createdAt      DateTime @default(now())
 
